@@ -1,6 +1,6 @@
 [
 {
     "keys": ["shift+alt+d"],
-    "command": "stop_rust_web_app"
+    "command": "stop_web_app"
 }
 ]

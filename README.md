@@ -1,6 +1,6 @@
-# StopRustWebApp
+# StopWebApp
 
-Stopping process of the web application (iron, nickel)
+Stopping process of the web application (rust, nodejs)
 
 Installation:
    sublime-text menu: Preferences->Browse Packages-> open window

@@ -5,10 +5,50 @@ import subprocess, signal
 import os
 import re
 
-class StopRustWebAppCommand(sublime_plugin.TextCommand):
+class StopWebAppCommand(sublime_plugin.TextCommand):
 
     def run(self, edit):
+
         path_to_file = self.view.file_name().split(path_separator)
+        file_name = path_to_file[ len(path_to_file)-1 ]
+
+        if file_name.endswith('.rs'):
+            self.__stop_rust_app(path_to_file)
+        elif file_name.endswith('.js'):
+            self.__stop_nodejs_app(path_to_file)
+
+    def __stop_nodejs_app(self, path_to_file):
+        is_win_os = sublime.platform() == "windows";
+        if is_win_os:
+            raise "TODO: for windows"
+
+        else:
+            p = subprocess.Popen("ps -A|grep node",
+                                 shell=True,
+                                 stdout=subprocess.PIPE,
+                               )
+            out, err = p.communicate()
+            if not err is None:
+                raise str(err)
+
+            process_pid = None
+            for line in out.splitlines():
+                substrs = line.split(None, 3)
+                if len(substrs) < 3:
+                    continue
+
+                pid = int(substrs[0]);
+                name = substrs[3].decode('utf-8');
+                if name == 'nodejs':
+                    process_pid = pid
+                    break
+
+            if process_pid is None:
+                raise 'Process "nodejs" not found.'
+            else:
+                os.kill(process_pid, signal.SIGKILL)
+
+    def __stop_rust_app(self, path_to_file):
         is_win_os = sublime.platform() == "windows";
 
         while len(path_to_file) > 0:
