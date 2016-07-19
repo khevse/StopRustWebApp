@@ -1,6 +1,6 @@
 import sublime, sublime_plugin
 from os import sep as path_separator
-from os.path import exists as exists_path
+from os.path import exists as exists_path, isfile
 import subprocess, signal
 import os
 import re
@@ -10,47 +10,41 @@ class StopWebAppCommand(sublime_plugin.TextCommand):
     def run(self, edit):
 
         path_to_file = self.view.file_name().split(path_separator)
-        file_name = path_to_file[ len(path_to_file)-1 ]
+        file_name = path_to_file[-1]
 
         if file_name.endswith('.rs'):
             self.__stop_rust_app(path_to_file)
         elif file_name.endswith('.js'):
             self.__stop_nodejs_app(path_to_file)
+        elif file_name.endswith('.go'):
+            self.__stop_go_app(path_to_file)
 
-    def __stop_nodejs_app(self, path_to_file):
-        is_win_os = sublime.platform() == "windows";
-        if is_win_os:
-            raise "TODO: for windows"
+    def __stop_go_app(self, path_to_file):
+        EXTENTION = '.go'
 
-        else:
-            p = subprocess.Popen("ps -A|grep node",
-                                 shell=True,
-                                 stdout=subprocess.PIPE,
-                               )
-            out, err = p.communicate()
-            if not err is None:
-                raise str(err)
+        while len(path_to_file)>2:
+            path_to_file.pop()
+            directory = path_separator.join(path_to_file)
 
-            process_pid = None
-            for line in out.splitlines():
-                substrs = line.split(None, 3)
-                if len(substrs) < 3:
+            has_files = False
+            for file_name in os.listdir(directory):
+                if not isfile(file_name) or not file_name.endswith(EXTENTION):
                     continue
 
-                pid = int(substrs[0]);
-                name = substrs[3].decode('utf-8');
-                if name == 'nodejs':
-                    process_pid = pid
-                    break
+                has_files = True
+                name_without_extention = file_name[:-len(EXTENTION)]
+                self.__kill_process(name_without_extention, with_excepton = False)
+                print(name_without_extention)
 
-            if process_pid is None:
-                raise 'Process "nodejs" not found.'
-            else:
-                os.kill(process_pid, signal.SIGKILL)
+            if not has_files:
+                break
+
+    def __stop_nodejs_app(self, path_to_file):
+        # Other version:
+        # use supervisor (https://github.com/petruisfan/node-supervisor)
+        self.__kill_process('node')
 
     def __stop_rust_app(self, path_to_file):
-        is_win_os = sublime.platform() == "windows";
-
         while len(path_to_file) > 0:
             path_to_file.pop()
             path_to_dir = path_separator.join(path_to_file)
@@ -74,7 +68,6 @@ class StopWebAppCommand(sublime_plugin.TextCommand):
 
                     if end_name_pos > 0:
                         project_name = text[start_name_pos:end_name_pos]
-                        project_name += ".exe" if is_win_os else ""
                         break
 
             if project_name is None:
@@ -85,10 +78,38 @@ class StopWebAppCommand(sublime_plugin.TextCommand):
             if not exists_path(path_to_debug_app):
                 return
 
-            if is_win_os:
-                subprocess.call("taskkill -f /im " + project_name, shell=True)
-
-            else:
-                subprocess.call("killall " + project_name, shell=True)
-
+            self.__kill_process(project_name)
             break
+
+    def __kill_process(self, process_name, with_excepton = True):
+        if sublime.platform() == "windows":
+            subprocess.call('taskkill -f /im {0}.exe'.format(process_name), shell=True)
+        else:
+            p = subprocess.Popen("ps -A|grep " + process_name,
+                                 shell=True,
+                                 stdout=subprocess.PIPE,
+                               )
+            out, err = p.communicate()
+            if not err is None:
+                raise str(err)
+
+            process_pid = None
+            for line in out.splitlines():
+                substrs = line.split(None, 3)
+                if len(substrs) < 3:
+                    continue
+
+                pid = int(substrs[0]);
+                name = substrs[3].decode('utf-8');
+                if name == process_name:
+                    process_pid = pid
+                    break
+
+            if with_excepton and process_pid is None:
+                raise Exception('Process "{0}" not found.'.format(process_name))
+
+            if not process_pid is None:
+                os.kill(process_pid, signal.SIGKILL)
+
+            # Other version:
+            # subprocess.call("killall " + project_name, shell=True)
