@@ -1,6 +1,6 @@
 # StopWebApp
 
-Stopping process of the web application (rust, nodejs)
+Stopping process of the web application (rust, golang, nodejs)
 
 Installation:
    sublime-text menu: Preferences->Browse Packages-> open window
