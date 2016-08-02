@@ -1,6 +1,6 @@
 import sublime, sublime_plugin
 from os import sep as path_separator
-from os.path import exists as exists_path, isfile
+from os.path import exists as exists_path, isdir
 import subprocess, signal
 import os
 import re
@@ -22,19 +22,22 @@ class StopWebAppCommand(sublime_plugin.TextCommand):
     def __stop_go_app(self, path_to_file):
         EXTENTION = '.go'
 
-        while len(path_to_file)>2:
+        while len(path_to_file)>2: # 2 = (directory + file)
             path_to_file.pop()
             directory = path_separator.join(path_to_file)
 
             has_files = False
             for file_name in os.listdir(directory):
-                if not isfile(file_name) or not file_name.endswith(EXTENTION):
+                if isdir(file_name) or not file_name.endswith(EXTENTION):
                     continue
 
                 has_files = True
                 name_without_extention = file_name[:-len(EXTENTION)]
-                self.__kill_process(name_without_extention, with_excepton = False)
-                print(name_without_extention)
+                try:
+                    self.__kill_process(name_without_extention, True)
+                    break
+                except:
+                    continue
 
             if not has_files:
                 break
