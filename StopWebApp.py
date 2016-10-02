@@ -22,16 +22,17 @@ class StopWebAppCommand(sublime_plugin.TextCommand):
     def __stop_go_app(self, path_to_file):
         EXTENTION = '.go'
 
+        project_forlders = self.view.window().folders()
+
         while len(path_to_file)>2: # 2 = (directory + file)
             path_to_file.pop()
             directory = path_separator.join(path_to_file)
+            project_forlders = [x for x in project_forlders if x != directory]
 
-            has_files = False
             for file_name in os.listdir(directory):
                 if isdir(file_name) or not file_name.endswith(EXTENTION):
                     continue
 
-                has_files = True
                 name_without_extention = file_name[:-len(EXTENTION)]
                 try:
                     self.__kill_process(name_without_extention, True)
@@ -39,8 +40,8 @@ class StopWebAppCommand(sublime_plugin.TextCommand):
                 except:
                     continue
 
-            if not has_files:
-                break
+            if len(project_forlders) == 0:
+                 break
 
     def __stop_nodejs_app(self, path_to_file):
         # Other version:
