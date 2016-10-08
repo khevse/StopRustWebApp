@@ -10,6 +10,7 @@ class StopWebAppCommand(sublime_plugin.TextCommand):
     def run(self, edit):
 
         path_to_file = self.view.file_name().split(path_separator)
+
         file_name = path_to_file[-1]
 
         if file_name.endswith('.rs'):
@@ -29,16 +30,32 @@ class StopWebAppCommand(sublime_plugin.TextCommand):
             directory = path_separator.join(path_to_file)
             project_forlders = [x for x in project_forlders if x != directory]
 
-            for file_name in os.listdir(directory):
-                if isdir(file_name) or not file_name.endswith(EXTENTION):
+            fiels_list = [path_to_file[-1]]
+            for x in os.listdir(directory):
+                if isdir(x) or not x.endswith(EXTENTION):
                     continue
 
-                name_without_extention = file_name[:-len(EXTENTION)]
+                fiels_list.append(x[:-len(EXTENTION)])
+
+            for name_without_extention in fiels_list:
+
                 try:
                     self.__kill_process(name_without_extention, True)
                     break
                 except:
-                    continue
+                    kill = False
+
+                try:
+                    self.__kill_process('{0}.test'.format(name_without_extention), True)
+                    break
+                except:
+                    kill = False
+
+                try:
+                    self.__kill_process('{0}.'.format(name_without_extention), True)
+                    break
+                except:
+                    kill = False
 
             if len(project_forlders) == 0:
                  break
@@ -105,6 +122,7 @@ class StopWebAppCommand(sublime_plugin.TextCommand):
 
                 pid = int(substrs[0]);
                 name = substrs[3].decode('utf-8');
+
                 if name == process_name:
                     process_pid = pid
                     break
@@ -113,6 +131,7 @@ class StopWebAppCommand(sublime_plugin.TextCommand):
                 raise Exception('Process "{0}" not found.'.format(process_name))
 
             if not process_pid is None:
+                print("Kill process:", process_name)
                 os.kill(process_pid, signal.SIGKILL)
 
             # Other version:
