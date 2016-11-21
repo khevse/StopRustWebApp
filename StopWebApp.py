@@ -30,32 +30,25 @@ class StopWebAppCommand(sublime_plugin.TextCommand):
             directory = path_separator.join(path_to_file)
             project_forlders = [x for x in project_forlders if x != directory]
 
-            fiels_list = [path_to_file[-1]]
+            fields_list = [path_to_file[-1]]
             for x in os.listdir(directory):
-                if isdir(x) or not x.endswith(EXTENTION):
+                if not isdir(x) and not x.endswith(EXTENTION):
                     continue
 
-                fiels_list.append(x[:-len(EXTENTION)])
+                fields_list.append(x[:-len(EXTENTION)])
 
-            for name_without_extention in fiels_list:
-
+            def kill(process_name):
                 try:
-                    self.__kill_process(name_without_extention, True)
-                    break
+                    self.__kill_process(process_name, True)
+                    return True
                 except:
-                    kill = False
+                    return False
 
-                try:
-                    self.__kill_process('{0}.test'.format(name_without_extention), True)
-                    break
-                except:
-                    kill = False
+            for name_without_extention in fields_list:
 
-                try:
-                    self.__kill_process('{0}.'.format(name_without_extention), True)
+                if kill(name_without_extention) or \
+                   kill('{0}.test'.format(name_without_extention)):
                     break
-                except:
-                    kill = False
 
             if len(project_forlders) == 0:
                  break
@@ -114,6 +107,7 @@ class StopWebAppCommand(sublime_plugin.TextCommand):
             if not err is None:
                 raise str(err)
 
+
             process_pid = None
             for line in out.splitlines():
                 substrs = line.split(None, 3)
@@ -123,7 +117,7 @@ class StopWebAppCommand(sublime_plugin.TextCommand):
                 pid = int(substrs[0]);
                 name = substrs[3].decode('utf-8');
 
-                if name == process_name:
+                if name == process_name or (len(process_name) > 5 and name.startswith(process_name)):
                     process_pid = pid
                     break
 
