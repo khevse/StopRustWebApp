@@ -97,7 +97,12 @@ class StopWebAppCommand(sublime_plugin.TextCommand):
 
     def __kill_process(self, process_name, with_excepton = True):
         if sublime.platform() == "windows":
-            subprocess.call('taskkill -f /im {0}.exe'.format(process_name), shell=True)
+            res = subprocess.call('taskkill -f /im {0}.exe'.format(process_name), shell=True)
+            if res == 0:
+                print("Kill process:", process_name)
+            else:
+                raise 'Not found process:' + process_name
+            
         else:
             p = subprocess.Popen("ps -A|grep " + process_name,
                                  shell=True,
